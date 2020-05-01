@@ -1,5 +1,10 @@
 <?php
-	session_start();  
+
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+	// session_start();  
 	/*This file contains several PHP functions to be used throughout the application*/
 	require_once('SQLFunc.php');
 	
@@ -19,7 +24,7 @@
 	
 		$count=0;
 		//Establish query
-		$Myquery = "SELECT * FROM Shipping.Users WHERE Username='".$uname."';"; 
+		$Myquery = "SELECT * FROM Users WHERE Username='".$uname."';"; 
 		
 		//Connect to the database and perform query
 		$mysqli = connectdb();
@@ -41,7 +46,7 @@
 	function verifyLevel($uname){
 
 		//Establish query
-		$selectquery="SELECT * FROM Shipping.Users WHERE Username='".$uname."';";
+		$selectquery="SELECT * FROM Users WHERE Username='".$uname."';";
 		
 		//Connect to database and perform query
 		$mysqli=connectdb();

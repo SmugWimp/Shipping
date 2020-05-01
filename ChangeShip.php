@@ -14,6 +14,8 @@
 		//Determine is session is expired
 		if(isset($_SESSION['uname'])){
 			//verify access level
+			$uname = $_SESSION['uname'];
+			// echo("<p>" . $_SESSION['level'] . "</p>");
 			if($_SESSION['level']>=2){
 				include('NavBar.html');
 				include('UpdateShipForm.php');
@@ -21,6 +23,7 @@
 				if(isset($_POST['Submit'])){
 					
 					//check and set all form varaibles
+					$client = check_input($_POST['client']);
 					$carrier = check_input($_POST['carrier']);
 					$estdel = check_input($_POST['estdel']);
 					$status = check_input($_POST['status']);
@@ -31,8 +34,8 @@
 						echo "<h3>Shipment record with the tracking number $tracknum successfully updated.</h3>";
 					}else{
 						//Notify user of general error
-						echo "<h2>An error occured when updating $uname's credentials.</h3>";
-						echo "<p>Please try again or contact your system administrator.</p>";
+						echo "<h2>An error occured when searching for shipment (Track#: $tracknum)</h3>";
+						echo "<p>Please try again, change some parameters, or contact your system administrator.</p>";
 					}
 				}
 			}else{

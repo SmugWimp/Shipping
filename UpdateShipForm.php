@@ -19,28 +19,31 @@
 				<td></td>
 			</tr>
 			<tr>
-				<td class="a">Client <input list='client'>
+				<td class="a">Client <input name='client' list='client'>
 					<datalist id='client'>";
 					<?php clientDropdown(); ?><!--displays current list of clients from db-->
 					</datalist>
+					</input>
 				</td>
-				<td class="b">Carrier <input list='carrier'>
+				<td class="b">Carrier <input name='carrier' list='carrier'>
 					<datalist id='carrier'>";
 					<?php carrierDropdown();?><!--displays current list of carriers from db-->
 					</datalist>
+					</input>
 				</td>
 			</tr>
 			<tr>
 				<td class="a">Estimated Delivery <input name='estdel' type='text'></td>
-				<td class="b">Shipment Status <input list='status'>
-					<datalist id='list'>
-						<option value='InTransit'>In Transit</option>
-						<option value='Delivered'>Delivered</option>
-						<option value='OnHold'>On Hold</option>
-				</datalist></td>
+				<td class="b">Shipment Status <select name = 'status' list='status'>
+					<option value=''></option>
+					<option value='InTransit'>In Transit</option>
+					<option value='Delivered'>Delivered</option>
+					<option value='OnHold'>On Hold</option>
+				</select>
+				</td>
 			</tr>
 			<tr>
-				<td id="mybuttona"><input type='submit' value='Search' name='Submit'></td>
+				<td id="mybuttona"><input type='submit' value='Update' name='Submit'></td>
 				<td id="mybuttonb"><input type='reset' value='Reset Form' name='Reset'></td>
 				
 		</table>

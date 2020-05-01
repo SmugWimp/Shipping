@@ -1,4 +1,7 @@
 username=root
-password=sdev
+password=
 host=localhost
 db=shipping
+
+// This file is no longer used in the SmugWimp fork of the Shipping WAMP app.
+// Please see 'dbCred.php'

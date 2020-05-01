@@ -2,9 +2,14 @@
 	/*This file contains PHP functions for the application to interact with the MySQL database.
 	Each function establishes a connection to the database and interacts using predefined querries and stored procedures*/
 
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
 	//File with general php functions
 	require_once('PHPFunc.php');
-	
+	require_once('dbcred.php');
+
 	//Establish global variables
 	static $host = 'localhost';
 	static $db = 'Shipping';
@@ -29,20 +34,8 @@
 	
 	//Function to retrieve preset db login info
 	function getDbparms(){
-	 	$trimmed = file('dbparms.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-		$key = array();
-		$vals = array();
-		foreach($trimmed as $line){
-			$pairs = explode("=",$line);    
-			$key[] = $pairs[0];
-			$vals[] = $pairs[1]; 
-		}
-		//Combine key and values into an array
-		$mypairs = array_combine($key,$vals);
-	
 		//Assign values to Parameters Class
-		$myDbparms = new DbparmsClass($mypairs['username'],$mypairs['password'],
-	                $mypairs['host'],$mypairs['db']);
+		$myDbparms = new DbparmsClass(DB_USER, DB_PASS, DB_HOST, DB_NAME);
 	
 		//Display the Paramters values
 		return $myDbparms;
@@ -105,8 +98,8 @@
 	}
 	
 	//Function to enter a new shipment 
-	function insertShipment($client, $carrier, $items, $shipdate, $deliverydate, $tracknum, $status){
-		
+	function insertShipment($client, $carrier, $items, $shipdate, $deliverydate, $tracknum, $status, $notes){
+		//echo("<p>" . $client . " " . $carrier . " " . $items . " " . $shipdate . " " . $deliverydate . " " . $tracknum . " " . $status . " " . $notes . "</p>");
 		//Establish variables
 		$success=false;
 		$date = date_create();
@@ -118,18 +111,23 @@
 				
 		//Connect to the database and execute stored procedure
 		$mysqli = connectdb();
-		$insertstmt=$mysqli->prepare("CALL insertShip(?,?,?,?,?,?,?,?");
-		$insertstmt->bind_param("ssssssss", $clientID, $carrierID, $items, $shipdate, $deliverydate, $tracknum, $status, $datenow);
-		$insertstmt->execute();
+		
+		$mySQLStatement = "INSERT INTO Shipment (ClientID, CarrierID, ItemsShipping, EstShipDate, EstDelivery, TrackingNum, Status, Notes, DateEntered) VALUES ('$clientID', '$carrierID', '$items', '$shipdate', '$deliverydate', '$tracknum', '$status', '$notes', '$dateNow')"; 
+		
+		$result = mysqli_query($mysqli,$mySQLStatement);
+		//$insertstmt=$mysqli->prepare("CALL insertShip(?,?,?,?,?,?,?,?)");
+		//$insertstmt->bind_param("ssssssss", $clientID, $carrierID, $items, $shipdate, $deliverydate, $tracknum, $status, $datenow);
+		//$insertstmt->execute();
 
-		//Execute query and determine success
-		$result=$insertstmt->affected_rows;
-		if($result>0){
+		// Execute query and determine success
+		//$result=$insertstmt->affected_rows;
+		
+		if($result > 0){
 			$success=true;
 		}
 
 		//Close query and connection
-		$insertstmt->close();
+		//$insertstmt->close();
 		$mysqli->close();
 		return $success;
 	}
@@ -140,15 +138,18 @@
 		$success=false;
 
 		//Establish connection
-		$mysqli=connectdb();
+		$mysqli = connectdb();
 		$insertstmt=$mysqli->prepare("CALL newClient(?)");
 		$insertstmt->bind_param("s", $business);
 		$insertstmt->execute();
 
 		//Execute query and determine success
-		$results=$insertstmt->affected_rows;
-		if($result>0){
+		$result = $insertstmt -> affected_rows;
+		
+		if($result > 0){
+			
 			$success=true;
+			
 		}
 		
 		//Close query and connection
@@ -264,7 +265,7 @@
 				$carrier=$row['CarrierName'];
 				$tracknum=$row['TrackingNum'];
 				$notes=$row['Notes'];
-				$entered=$row['DateEnetered'];
+				$entered=$row['DateEntered'];
 				
 				//Create an object for reference
 				$allShipments= new ShipmentClass($shipmentID, $clientID, $client, $items, $estdel, $status, $carrierID, $carrier, $tracknum, $notes, $entered);
@@ -277,57 +278,90 @@
 	}
 	
 	//Function to populate client dropdown
+	function statusDropdown() {
+		
+		echo "<option value='In Transit'>In Transit</option>";
+		echo "<option value='Delivered'>Delivered</option>";
+		echo "<option value='On Hold'>On Hold</option>";		
+	}
+	
 	function clientDropdown(){
 
 		//Establish connection and perform stored procedure
-		$mysqli=connectdb();
-		$selectstmt=$mysqli->prepare("CALL showCarriers()");
-		$selectstmt->execute();
-		$result=$selectstmt->get_result();
+		$mysqli = connectdb();
 		
-		//Populate options to dropdown
-		while($row=$results->fetch_assoc()){
+		 $newResult = mysqli_query($mysqli,"SELECT * FROM client");
+		//$newResult = mysqli_query($mysqli,"CALL showClient()");
+		
+		while($row = mysqli_fetch_array($newResult)){
 			echo "<option value='" .$row['BusinessName']. "'>" .$row['BusinessName']. "</option>";
 		}
+		
+		
+		//$selectstmt = $mysqli -> prepare("CALL showClient()");
+		//$selectstmt -> execute();
+		//$result = $selectstmt -> get_result();
+		
+		//Populate options to dropdown
+		//while($row = $result->fetch_assoc()){
+		//	echo "<option value='" .$row['BusinessName']. "'>" .$row['BusinessName']. "</option>";
+		//}
 		//Close query and connection
-		$selectstmt->close();
+		//$selectstmt->close();
 		$mysqli->close();
 	}
 	
 	//Function to populate carrier dropdown
 	function carrierDropdown(){
 
+		$mysqli = connectdb();
+		
+		 $newResult = mysqli_query($mysqli,"SELECT * FROM carrier");
+		
+		while($row = mysqli_fetch_array($newResult)){
+			echo "<option value='" .$row['CarrierName']. "'>" .$row['CarrierName']. "</option>";
+		}
+
 		//Establish connection and perform stored procedure
-		$mysqli=connectdb();
-		$selectstmt=$mysqli->prepare("CALL showClient()");
-		$selectstmt->execute();
-		$result=$selectstmt->get_result();
+		//$mysqli=connectdb();
+		//$selectstmt=$mysqli->prepare("CALL showCarriers()");
+		//$selectstmt->execute();
+		//$result=$selectstmt->get_result();
 
 		//Populate options to dropdown
-		while($row=$results->fetch_assoc()){
-			echo "<option value='" . $row['CarrierName'] . "'>" .$row['CarrierName'] ."</option>";
-		}
+		//while($row=$results->fetch_assoc()){
+		//	echo "<option value='" . $row['CarrierName'] . "'>" .$row['CarrierName'] ."</option>";
+		//}
 		//Close query and connection
-		$selectstmt->close();
+		//$selectstmt->close();
 		$mysqli->close();
 	}
 	
 	//Function to determine clientID
 	function findClient($business){
-		
-		//Prepare initial query
-		$mysqli=connectdb();
-		$selectstmt=$mysqli->prepare("CALL FindClient(?)");
-		$selectstmt->bind_param("s", $business);
-		$selectstmt->execute();
 
+		$mysqli = connectdb();
+		$newResult = mysqli_query($mysqli,"SELECT * FROM client WHERE BusinessName = '$business'");
+		while($row = mysqli_fetch_array($newResult)){
+			$clientID = $row['ClientID']; //   $row['CarrierName']. "'>" .$row['CarrierName']. "</option>";
+		}
+		//Prepare initial query
+		//$mysqli=connectdb();
+		//$selectstmt=$mysqli->prepare("CALL FindClient(?)");
+		//$selectstmt->bind_param("s", $business);
+		//$selectstmt->execute();
+		/*
 		if($result=$selectstmt->get_result(){
+			
 			while($row = $results->fetch_assoc()){
+				
 				$clientID=$row['ClientID'];
 			}
+
 		}
+		*/
 		//Close query and connection
-		$selectstmt->close();
+		//$selectstmt->close();
 		$mysqli->close();
 		return $clientID;
 	}
@@ -336,61 +370,86 @@
 	//Function to determine carrierID
 	function findCarrier($carrier){
 
-		//Prepare initial query
-		$mysqli=connectdb();
-		$selectstmt=$mysqli->prepare("CALL FindCarrier(?)");
-		$selectstmt->bind_param("s",$carrier);
-		$selectstmt->execute();
-
-		if($result=$selectstmt->get_result(){
-		while($row=$results->fetch_assoc()){
-			$carrierID=$row['CarrierID'];
+		$mysqli = connectdb();
+		$newResult = mysqli_query($mysqli,"SELECT * FROM carrier WHERE CarrierName = '$carrier'");
+		while($row = mysqli_fetch_array($newResult)){
+			$carrierID = $row['CarrierID']; //   $row['CarrierName']. "'>" .$row['CarrierName']. "</option>";
 		}
+		//Prepare initial query
+		//$mysqli=connectdb();
+		//$selectstmt=$mysqli->prepare("CALL FindCarrier(?)");
+		//$selectstmt->bind_param("s",$carrier);
+		//$selectstmt->execute();
+		//$newResult = $selectstmt -> get_result();
+		
+		
+		//if($result=$selectstmt->get_result(){
+		//if ($result = $newResult) {
+		
+		//while($row=$results->fetch_assoc()){
+		//	$carrierID=$row['CarrierID'];
+		//}
+		//}
 		//Close query and connection
-		$selectstmt->close();
+		//$selectstmt->close();
 		$mysqli->close();
 		return $carrierID;
 	}
-	
+
 	function updateShip($tracknum, $client, $carrier, $estdel, $status){
 		
 		//Establish variables and main query
 		$count=0;
 		$success = false;
-		$update = "UPDATE alpineshipping.Shipment SET";
+		$update = "UPDATE Shipment SET";
 		
 		//Determine which fields are filled and append the query
+//		if($tracknum) {
+//			$update = $update . " TrackingNum='" . $tracknum . "'";
+//			$count++;
+//		} else {
+//			//echo("<p>notracknum</p>");
+//		}
+
 		if($client){
-			$clientID=findClient($client);
-			$update = $update. " ClientID='".$clientID."'";
+			$clientID = findClient($client);
+			$update = $update . " ClientID='" . $clientID . "'";
 			$count++;
+		} else {
+			//echo("<p>noclient</p>");
 		}
 		if($carrier){
-			$carrierID=findCarrier($carrier);
-			if($count>0){
+			$carrierID = findCarrier($carrier);
+			if($count > 0) {
 				$update = $update. ",";
 			}
-			$update=$update. " CarrierID='".$carrierID."'";
+			$update = $update . " CarrierID = '" . $carrierID . "'";
 			$count++;
+		} else {
+			//echo("<p>nocarrier</p>");
 		}
 		if($estdel){
 			if($count>0){
-				$update=$update. ",";
+				$update = $update . ",";
 			}
-			$update=$update. " EstDelivery='".$estdel."'";
+			$update = $update . " EstDelivery = '" . $estdel . "'";
 			$count++;
+		} else {
+			//echo("<p>nodelivery</p>");
 		}
 		if($status){
 			if($count>0){
 				$update=$update. ",";
 			}
-			$update=$update. " Status='".$status."'";
+			$update=$update. " Status = '" . $status . "'";
 			$count++;
 		}
-		$update=$update. " WHERE TrackingNum='".$tracknum."';";
+		
+		// echo("<p>" . $update . "</p>");
+		$update=$update. " WHERE TrackingNum = '" . $tracknum . "';";
 		
 		//Connect to database and perform query
-		$mysqli=conenctdb();
+		$mysqli=connectdb();
 		if($result=$mysqli->query($update)){
 			$success = true;
 		}

@@ -9,10 +9,11 @@
 	function addUser($uname, $pass, $level){
 		//Deinfe variables and SQL statements
 		$success=false;
+		$host= 'localhost';
 		$pass=password_hash($pass, PASSWORD_DEFAULT);
 		$select="SELECT * FROM Shipping.Users WHERE Username='".$uname."';";
-		$newUser="CREATE USER '".$uname."'@'".$host."' IDENTIFIED BY '".$pass."';";
-		$usertable="INSERT INTO Shipping.Users VALUES ('".$uname."','".$pass."','".$level."');";
+		$newUser="CREATE USER '".$uname."'@'" . $host . "' IDENTIFIED BY '".$pass."';";
+		$usertable="INSERT INTO Shipping.Users VALUES ('". $uname ."','". $pass ."','". $level ."');";
 		
 		//establish connection and perform queries
 		$mysqli=connectdb();
@@ -23,7 +24,7 @@
 				switch($level){
 					//Prepare statement for correct user access level
 					case '1':
-						$access = "GRANT SELECT on Shipping.* to '".$uname."'@'".$host."';";
+						$access = "GRANT SELECT on Shipping.* to '" .$uname ."'@'". $host ."';";
 						break;
 					case '2':
 						$access="GRANT SELECT, INSERT, UPDATE on Shipping.* to '".$uname."'@'".$host."';";
@@ -47,6 +48,7 @@
 	function passChange($uname, $pass, $newpass){
 		//Establish variable and SQL statements
 		$success=false;
+		$host= 'localhost';
 		$haspass= password_hash($newpass, PASSWORD_DEFAULT);
 		$alterUser="ALTER USER '".$uname."'@'".$host."' IDENTIFIED BY '".$newpass."';";
 		$passconf = "SELECT * FROM Shipping.Users WHERE Username='".$uname."';";
@@ -73,6 +75,8 @@
 	//Function to delete users from database
 	function deleteUser($uname){
 		//Prepare queries to remove user and revoke privileges
+		$host= 'localhost';
+
 		$privileges="REVOKE ALL on Shipping.* FROM '".$uname."'@'".$host."';";
 		$dropUser="DROP USER '".$uname."'@'".$host."';";
 		//Establish connection and perform queries
